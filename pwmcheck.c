@@ -2,18 +2,60 @@
 #include <softPwm.h>
 #include <pthread.h>
 #include "ping.c"
+#include <signal.h>
+#include <stdio.h>
 
-// boolean whoops, google, optiplex, router = false;
-
-
+int red, green, blue = 0;
 
 int i, y, u = 0;
-int main (void)
+
+
+void updateLED(int speed, int redTarget, int greenTarget, int blueTarget) {
+
+	printf("redTarget: %d\tred: %d\tgreenTarget: %d\tgreen: %d\tblueTarget: %d\tblue: %d\t\n", redTarget, red, greenTarget, green, blueTarget, blue);
+
+	while (red != redTarget || green != greenTarget || blue != blueTarget) {
+		if (red > redTarget) {
+			red--;
+		} else if (red < redTarget) {
+			red++;
+		}
+		if (green > greenTarget) {
+			green--;
+		} else if (green < greenTarget) {
+			green++;
+		}
+
+		if (blue > blueTarget) {
+			blue--;
+		} else if (blue < blueTarget) {
+			blue++;
+		}
+
+		// printf("red: %d\tgreen: %d\tblue: %d\n", red, green, blue);
+		softPwmWrite(0, 100 - red);
+		softPwmWrite(2, 100 - green);
+		softPwmWrite(3, 100 - blue);
+
+		delay(speed);
+	}
+}
+
+
+void sigint(int a)
 {
+	updateLED(2, 0, 0, 0);
+	abort();
+}
+
+int main (void) {
 	// "setup"
-	wiringPiSetup () ;
+	wiringPiSetup();
 	//  pinMode (0, pwm) ;
-	softPwmCreate (0, 255, 255) ;
+	softPwmCreate(0, 100, 100);
+	softPwmCreate(2, 100, 100);
+	softPwmCreate(3, 100, 100);
+	signal(SIGINT, sigint);
 	// end of "setup"
 
 	// if (ping("www.google.com"))
@@ -21,38 +63,26 @@ int main (void)
 	// else
 	// 	printf("Ping is OK. \n");
 
+// loooooooop
+	for (;;) {
+		if (!ping("google.com")) {
+			printf("Google is OK\n");
+			updateLED(10, 0, 100, 0);
+			delay(60000);
+		} else {
+			printf("Google is NOT OK\n");
+			while (ping("google.com")) {
+				for (i = 0; i < 5; i++) {
+					updateLED(10, 100, 0, 0);
+					delay(100);
+					updateLED(10, 0, 0, 0);
+				}
+			}
 
+		}
 
-
-	// unsigned int rgbColour[3];
-
-	// // Start off with red.
-	// rgbColour[0] = 255;
-	// rgbColour[1] = 0;
-	// rgbColour[2] = 0;
-
-	// Choose the colours to increment and decrement.
-	// for (int decColour = 0; decColour < 3; decColour += 1) {
-	// 	int incColour = decColour == 2 ? 0 : decColour + 1;
-
-	// 	// cross-fade the two colours.
-	// 	for (int i = 0; i < 255; i += 1) {
-	// 		rgbColour[decColour] -= 1;
-	// 		rgbColour[incColour] += 1;
-
-	// 		updateLED(rgbColour[0], rgbColour[1], rgbColour[2]);
-	// 		delay(5);
-	// 	}
-	// }
-
-
-	
+	}
+// stuff that should be done when finished
+	updateLED(100, 0, 0, 0);
+	return 1;
 }
-
-// void updateLED(int redLED, int greenLED, int blueLED) {
-// 	softPwmWrite(0, 255 - redLED);
-// 	softPwmWrite(2, 255 - greenLED);
-// 	softPwmWrite(3, 255 - blueLED);
-// }
-
-// return 0 or 1
