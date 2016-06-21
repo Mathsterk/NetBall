@@ -3,16 +3,30 @@
 #include <pthread.h>
 #include "ping.c"
 #include <signal.h>
+#include <time.h>
+#include <stdlib.h>
 #include <stdio.h>
+
+#define KNRM  "\x1B[0m"
+#define KRED  "\x1B[31m"
+#define KGRN  "\x1B[32m"
+#define KYEL  "\x1B[33m"
+#define KBLU  "\x1B[34m"
+#define KMAG  "\x1B[35m"
+#define KCYN  "\x1B[36m"
+#define KWHT  "\x1B[37m"
 
 int red, green, blue = 0;
 
 int i, y, u = 0;
 
+time_t now;
+struct tm *now_tm;
+int hour, minute;
 
 void updateLED(int speed, int redTarget, int greenTarget, int blueTarget) {
 
-	printf("redTarget: %d\tred: %d\tgreenTarget: %d\tgreen: %d\tblueTarget: %d\tblue: %d\t\n", redTarget, red, greenTarget, green, blueTarget, blue);
+	printf("%sredTarget: %d\t red: %d\t%sgreenTarget: %d \tgreen: %d\t%sblueTarget: %d\tblue: %d\t\n", KRED, redTarget, red, KGRN, greenTarget, green, KBLU, blueTarget, blue);
 
 	while (red != redTarget || green != greenTarget || blue != blueTarget) {
 		if (red > redTarget) {
@@ -58,30 +72,45 @@ int main (void) {
 	signal(SIGINT, sigint);
 	// end of "setup"
 
-	// if (ping("www.google.com"))
-	// 	printf("Ping is not OK. \n");
-	// else
-	// 	printf("Ping is OK. \n");
-
 // loooooooop
 	for (;;) {
-		if (!ping("google.com")) {
-			printf("Google is OK\n");
-			updateLED(10, 0, 100, 0);
-			delay(60000);
+
+
+		now = time(NULL);
+		now_tm = localtime(&now);
+		hour = now_tm->tm_hour;
+		minute = now_tm->tm_min;
+
+		printf("%sTime: %d:%d\t", KNRM, hour, minute);
+
+		if (!ping("mathsterk.net")) {
+			printf("%sWhoops is OK\t", KGRN);
+			if (hour > 7 && hour < 21) {
+				updateLED(10, 0, 100, 0);
+			} else {
+				updateLED(10, 0, 10, 0);
+			}
+			delay(1000);
 		} else {
-			printf("Google is NOT OK\n");
-			while (ping("google.com")) {
-				for (i = 0; i < 5; i++) {
-					updateLED(10, 100, 0, 0);
-					delay(100);
-					updateLED(10, 0, 0, 0);
+			printf("%sWhoops is NOT OK\t", KRED);
+			while (ping("mathsterk.net")) {
+				if (hour > 7 && hour < 21) {
+					for (i = 0; i < 5; i++) {
+						updateLED(10, 100, 0, 0);
+						delay(100);
+						updateLED(10, 0, 0, 0);
+					}
+				} else {
+					for (i = 0; i < 5; i++) {
+						updateLED(10, 20, 0, 0);
+						delay(100);
+						updateLED(10, 0, 0, 0);
+					}
 				}
 			}
-
 		}
-
 	}
+
 // stuff that should be done when finished
 	updateLED(100, 0, 0, 0);
 	return 1;
